@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課金與省錢計算機 - Gacha Top-Up Guide</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>GACHA TOP-UP &amp; FX GUIDE</h1>
+        <p>自選課金檔位、跨區省錢試算與當期 UP 期望值分析</p>
+    </header>
+
+    <nav>
+        <a href="index.html">首頁總覽</a>
+        <a href="calculator.html" class="active">課金與省錢計算機</a>
+        <a href="rates.html">各遊戲抽卡機制表</a>
+        <a href="guide.html">跨區課金指南</a>
+    </nav>
+
+    <main class="container">
+        <section class="section-card">
+            <h2>多遊戲課金、匯率與保底期望值計算機</h2>
+            <p>首儲雙倍每個檔位<strong>僅限使用一次</strong>：點選購買第 1 單後，該檔位雙倍開關會<strong>自動關閉</strong>，之後再增加數量皆以常駐加贈計算；若該檔位首儲先前已用掉，亦可直接手動關閉開關。</p>
+
+            <!-- 控制面板 -->
+            <div class="control-bar">
+                <div>
+                    <label for="game-select"><strong>1. 選擇遊戲：</strong></label>
+                    <select id="game-select" onchange="renderPackages()">
+                        <option value="genshin">原神 (160原石/抽)</option>
+                        <option value="hsr">崩壞：星穹鐵道 (160星瓊/抽)</option>
+                        <option value="zzz">絕區零 (160菲林/抽)</option>
+                        <option value="wuwa">鳴潮 (160星聲/抽)</option>
+                        <option value="endfield">明日方舟：終末地 (500玉/抽)</option>
+                        <option value="nte">異環 (160結晶/抽)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="currency-select"><strong>2. 結算顯示幣別：</strong></label>
+                    <select id="currency-select" onchange="calculateSummary()">
+                        <option value="JPY">日圓結算 (JPY 日區課金)</option>
+                        <option value="TWD">台幣結算 (TWD 台區原價)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="jpy-rate"><strong>3. 日圓匯率 (1 JPY = ? TWD)：</strong></label>
+                    <input type="number" id="jpy-rate" value="0.215" step="0.001" min="0.1" max="1" style="width: 95px;" onchange="calculateSummary()">
+                </div>
+
+                <div>
+                    <button class="btn" onclick="toggleAllBonuses(true)">重置所有雙倍</button>
+                    <button class="btn btn-outline" onclick="toggleAllBonuses(false)">全部標記已用掉</button>
+                    <button class="btn" onclick="selectAllFirstTime()">一鍵全選首儲</button>
+                    <button class="btn btn-outline" onclick="resetSelection()">清空數量</button>
+                </div>
+            </div>
+
+            <!-- 當前遊戲卡池機制說明提示框 -->
+            <div id="pity-rule-banner" style="background-color: #fff8dc; border-left: 4px solid #d4af37; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
+                <strong>卡池機率模型：</strong><span id="pity-rule-text">載入中...</span>
+            </div>
+
+            <!-- 動態生成的課金項目表格 -->
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 55px;">勾選</th>
+                        <th>課金項目名稱</th>
+                        <th style="width: 115px;">首儲雙倍狀態</th>
+                        <th>下次獲得資源</th>
+                        <th>台區定價 (TWD)</th>
+                        <th>日區定價 (JPY)</th>
+                        <th style="width: 85px;">購買數量</th>
+                    </tr>
+                </thead>
+                <tbody id="package-table-body">
+                    <!-- 由 script.js 動態填入 -->
+                </tbody>
+            </table>
+
+            <!-- 即時統計看板 -->
+            <div class="summary-box">
+                <div class="summary-metric">
+                    <span>總計獲得抽卡資源 (<strong id="currency-unit-name">原石</strong>)</span>
+                    <span class="value" id="total-stones">0</span>
+                </div>
+
+                <div class="summary-metric">
+                    <span>換算總計可抽次數 (<strong id="pull-cost-label">160 / 1抽</strong>)</span>
+                    <span class="value" id="total-pulls">0.00 抽</span>
+                </div>
+
+                <div class="summary-metric">
+                    <span>總出金(含常駐歪) 保底 ～ 平均期望</span>
+                    <span class="value" id="total-gold-display">0 隻 ～ 0.00 隻</span>
+                </div>
+
+                <div class="summary-metric">
+                    <span>當期 UP 限定角色 (最少保底 ～ 平均期望)</span>
+                    <span class="value" id="up-character-display">0 隻 ～ 0.00 隻</span>
+                </div>
+
+                <div class="summary-metric">
+                    <span id="selected-currency-title">日區結算總金額 (JPY 折合台幣)</span>
+                    <span class="value" id="total-cost-display">¥0 (約 NT$0)</span>
+                </div>
+
+                <div class="summary-metric">
+                    <span>切換至日圓結算相比台幣原價可省下</span>
+                    <span class="value save-badge" id="saved-amount-display">NT$ 0 (省 0%)</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Gacha Top-Up &amp; FX Guide | Web Programming Midterm Project</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
